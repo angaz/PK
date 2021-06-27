@@ -4,6 +4,9 @@ import type { AbiItem } from 'web3-utils';
 import type { Contract } from 'web3-eth-contract';
 import './App.css';
 import PKToken from './contracts/PKToken.json';
+import LoadingSpinner from './components/LoadingSpinner';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import Home from './Pages/Home';
 
 type ContractNetworks = {
   [key: string]: {
@@ -11,48 +14,40 @@ type ContractNetworks = {
   }
 }
 
-function App() {
+const initContract = async (web3: Web3, setPK: React.Dispatch<React.SetStateAction<Contract | undefined>>) => {
+  const networkID = (await web3.eth.net.getId()).toString();
+  const contractAddress = (PKToken.networks as ContractNetworks)[networkID].address;
+  const contractABI = PKToken.abi as AbiItem[];
+  setPK(new web3.eth.Contract(contractABI, contractAddress));
+}
+
+const initAccounts = async (web3: Web3, setAccounts: React.Dispatch<React.SetStateAction<string[]>>) => {
+  setAccounts(await web3.eth.getAccounts());
+}
+
+const App = () => {
   const [accounts, setAccounts] = useState<string[]>([]);
   const [web3] = useState(new Web3(Web3.givenProvider || 'http://localhost:8545'));
   const [PK, setPK] = useState<Contract>();
-  const [toAccount, setToAccount] = useState("");
 
   useEffect(() => {
-    (async () => {
-      setAccounts(await web3.eth.getAccounts());
-      const networkID = (await web3.eth.net.getId()).toString();
-      setPK(new web3.eth.Contract(PKToken.abi as AbiItem[], (PKToken.networks as ContractNetworks)[networkID].address));
-    })()
+    initAccounts(web3, setAccounts);
+    initContract(web3, setPK);
   }, [web3]);
 
-  const gee = () => {
-    if (PK !== undefined) {
-      PK.methods.gee(toAccount).send({ from: accounts[0] });
-    }
-  }
-
-  const tokens = async () => {
-    if (PK !== undefined) {
-      const last100 = await PK.methods.last100().call();
-      console.log(last100);
-    }
-  }
-
-  const ownersTokens = async () => {
-    if (PK !== undefined) {
-      const tokens = await PK.methods.ownersTokens(toAccount).call();
-      console.log(tokens);
-    }
+  if (PK === undefined) {
+    return <LoadingSpinner />
   }
 
   return (
     <div className="App">
-      <div>
-      <input onChange={e => setToAccount(e.target.value)} value={toAccount} placeholder="PK na" />
-      <button onClick={gee}>Gee Poes Klap</button>
-      <button onClick={tokens}>Last 100</button>
-      <button onClick={ownersTokens}>Owners Tokens</button>
-      </div>
+      <Router>
+        <Switch>
+          <Route path="/" exact>
+            <Home {...{ accounts, PK }} />
+          </Route>
+        </Switch>
+      </Router>
     </div>
   );
 }

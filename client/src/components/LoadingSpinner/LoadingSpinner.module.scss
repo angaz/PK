@@ -1,0 +1,22 @@
+.LoadingSpinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border: 20px solid black;
+  border-top-color: transparent;
+  border-radius: 50%;
+
+  animation: loading-spinner 1s linear infinite;
+}
+
+@keyframes loading-spinner {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
